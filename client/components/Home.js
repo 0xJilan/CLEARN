@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import Image from "next/image";
+import Card from "components/Card";
 
 const HomeWrapper = styled.div`
   height: 100%;
@@ -31,10 +32,11 @@ const Home = () => {
     <HomeWrapper>
       <Illustration>
         <Image src="/Invest.svg" alt="Clearn logo" width={240} height={380} />
-      </Illustration>
-      <InvestBox>
         <h1>CLEARN</h1>
         <h4>Epargne solidaire</h4>
+      </Illustration>
+      <InvestBox>
+        <Card />
       </InvestBox>
     </HomeWrapper>
   );
