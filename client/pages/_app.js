@@ -1,43 +1,38 @@
 import Head from "next/head";
 import "../styles/globals.css";
-import {
-  WagmiConfig,
-  createClient,
-  defaultChains,
-  configureChains,
-} from "wagmi";
+import "@rainbow-me/rainbowkit/styles.css";
+import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
-import { InjectedConnector } from "wagmi/connectors/injected";
 
-const { chains, provider, webSocketProvider } = configureChains(defaultChains, [
-  alchemyProvider({ apiKey: process.env.ALCHEMY_GOERLI_KEY }),
-  publicProvider(),
-]);
-const client = createClient({
+const { chains, provider } = configureChains(
+  [chain.goerli, chain.polygonMumbai],
+  [alchemyProvider({ apiKey: process.env.ALCHEMY_ID }), publicProvider()]
+);
+
+const { connectors } = getDefaultWallets({
+  appName: "Clearn",
+  chains,
+});
+
+const wagmiClient = createClient({
   autoConnect: true,
-  connectors: [
-    new InjectedConnector({
-      chains,
-      options: {
-        name: "Injected",
-        shimDisconnect: true,
-      },
-    }),
-  ],
+  connectors,
   provider,
-  webSocketProvider,
 });
 
 function MyApp({ Component, pageProps }) {
   return (
-    <WagmiConfig client={client}>
-      <Head>
-        <title>CLEARN</title>
-        <meta name="description" content="Epargne solidaire" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <Component {...pageProps} />
+    <WagmiConfig client={wagmiClient}>
+      <RainbowKitProvider chains={chains}>
+        <Head>
+          <title>CLEARN</title>
+          <meta name="description" content="Epargne solidaire" />
+          <link rel="icon" href="/favicon.ico" />
+        </Head>
+        <Component {...pageProps} />
+      </RainbowKitProvider>
     </WagmiConfig>
   );
 }

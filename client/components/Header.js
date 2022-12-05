@@ -1,5 +1,7 @@
 import styled from "styled-components";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
+import useIsMounted from "lib/useIsMounted";
 
 const Header = styled.header`
   display: flex;
@@ -43,6 +45,7 @@ const FakeRound = styled.div`
 `;
 
 const HeaderComponent = () => {
+  const mounted = useIsMounted();
   return (
     <Header>
       <Logo>
@@ -53,10 +56,7 @@ const HeaderComponent = () => {
         <p>Comprendre</p>
         <p>Associations</p>
       </Navigation>
-      <Wallet>
-        <FakeRound />
-        <p>0xdead...beef</p>
-      </Wallet>
+      <ConnectButton />
     </Header>
   );
 };

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^0.8.0",
     "eslint": "8.28.0",
     "eslint-config-next": "13.0.6",
     "ethers": "^5.7.2",

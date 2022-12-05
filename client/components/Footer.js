@@ -1,7 +1,6 @@
 import styled from "styled-components";
 import Link from "next/link";
 import Image from "next/image";
-
 const Footer = styled.footer`
   display: flex;
   width: 100%;
