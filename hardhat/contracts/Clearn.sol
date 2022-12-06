@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Clearn is ERC20, Ownable {
     error NotOwner();
     error MinterSet();
-    //TODO: Add Function documentation les fonctions et
+    //TODO: Add Function documentation
     //TODO: Add Events for setMinter,  debitFrom, creditTo
 
     /// @notice Only treasury address can mint tokens
@@ -33,10 +33,6 @@ contract Clearn is ERC20, Ownable {
         address _from,
         uint256 _amount
     ) external virtual onlyMinter {
-        address spender = _msgSender();
-        if (_from != spender) {
-            _spendAllowance(_from, spender, _amount);
-        }
         _burn(_from, _amount);
     }
 
