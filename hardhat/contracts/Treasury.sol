@@ -22,8 +22,8 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 contract Treasury is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    ///@notice 100 USD
-    uint256 internal constant MIN_VALUE = 100 * 10 ** 18;
+    ///@notice 50 USD
+    uint256 internal constant MIN_VALUE = 50 * 10 ** 18;
     IClearn public immutable clearn;
     ///@notice address who manage treasury funds
     address public strategyHub;
@@ -87,7 +87,7 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
     }
 
         
-     ///@dev Deposit provide users a way to invest a depositable asset  in treasury,
+     ///@notice Deposit provide users a way to invest a depositable asset  in treasury,
      /// then treasury mint CLEARN by 1:1 ratio and give back equivalent CLEARN
      ///@param _token the token which is to be deposited
      ///@param _amount the amount for this particular deposit
@@ -116,4 +116,6 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         IERC20(_token).safeTransferFrom(msg.sender, strategyHub, _amount);
         clearn.creditTo(msg.sender, value);
     }
+
 }
+
