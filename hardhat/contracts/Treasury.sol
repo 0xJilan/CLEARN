@@ -22,12 +22,18 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 contract Treasury is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant SCALE = 10 ** 18;
-    uint256 internal constant MIN_VALUE = 50 * 10 ** 18;
+    ///@notice 100 USD
+    uint256 internal constant MIN_VALUE = 100 * 10 ** 18;
     IClearn public immutable clearn;
+    ///@notice address who manage treasury funds
     address public strategyHub;
     uint256 public valueDeposited;
 
+    event Deposit(
+        address indexed _depositor,
+        IERC20 indexed _token,
+        uint256 _value
+    );
     event DepositableToken(IERC20 indexed _token, address indexed _priceFreed);
     event TokenRemoved(IERC20 indexed _token);
 
@@ -40,8 +46,8 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
     ///@param _strategyHub The StrategyHub address that controls deposited funds
     ///@param _clearn CLEARN ERC20 address
     constructor(address _clearn, address _strategyHub) {
-        strategyHub = _strategyHub;
         clearn = IClearn(_clearn);
+        strategyHub = _strategyHub;
     }
 
     /// @notice Check if token is allowed to be deposit in treasury;
@@ -50,11 +56,13 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         _;
     }
 
+
+    //TODO: COMMENT GET PRICE
     function getPrice(
         IERC20 _token
     ) public view returns (uint256, IAggregatorPriceFeeds) {
         IAggregatorPriceFeeds feed = priceFeeds[_token];
-        (, int256 price, , uint256 updatedAt, ) = feed.latestRoundData();
+        (, int256 price, , , ) = feed.latestRoundData();
         return (uint256(price), feed);
     }
 
@@ -76,5 +84,36 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         delete depositableTokens[_token];
         delete priceFeeds[_token];
         emit TokenRemoved(_token);
+    }
+
+        
+     ///@dev Deposit provide users a way to invest a depositable asset  in treasury,
+     /// then treasury mint CLEARN by 1:1 ratio and give back equivalent CLEARN
+     ///@param _token the token which is to be deposited
+     ///@param _amount the amount for this particular deposit
+    function deposit(IERC20Metadata _token, uint256 _amount)
+        external
+        nonReentrant
+        depositable(_token)
+        whenNotPaused
+    {
+        require(_amount > 0, "Deposit must be more than 0");
+        uint8 decimals = IERC20Metadata(_token).decimals();
+        (uint256 tokenPrice, IAggregatorPriceFeeds tokenFeed) = getPrice(_token);
+        uint256 value;
+        if (decimals != 18) {
+            value =
+                (tokenPrice * _amount * 1e18) /
+                10**(decimals + tokenFeed.decimals());
+                console.log('value if token decimal != 18 :',value );
+        } else {
+            value = (tokenPrice * _amount) / 10**(tokenFeed.decimals());
+            console.log('value if token decimal = 18 :',value );
+        }
+        require(value >= MIN_VALUE, "less than min deposit of $100");
+        valueDeposited += value;
+        emit Deposit(msg.sender, _token, value);
+        IERC20(_token).safeTransferFrom(msg.sender, strategyHub, _amount);
+        clearn.creditTo(msg.sender, value);
     }
 }

@@ -24,7 +24,7 @@ contract Clearn is ERC20, Ownable {
     }
 
     /// @notice Set minter address if called by Owner;
-    /// @param _minter treasury address that will controls mint and burn;
+    /// @param _minter treasury address that will controls mint and burn;   
     function setMinter(address _minter) external onlyOwner {
         minter = _minter;
         emit SetMinter(_minter);
