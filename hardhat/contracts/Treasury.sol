@@ -20,10 +20,7 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
  *  - Allow users to withdraw CLEARN to ERC20
  */
 contract Treasury is Ownable, ReentrancyGuard, Pausable {
-    using SafeERC20 for IERC20;
 
-    ///@notice 50 USD
-    uint256 internal constant MIN_VALUE = 50 * 10 ** 18;
     IClearn public immutable clearn;
     ///@notice address who manage treasury funds
     address public strategyHub;
@@ -86,35 +83,34 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         emit TokenRemoved(_token);
     }
 
-        
-     ///@notice Deposit provide users a way to invest a depositable asset  in treasury,
-     /// then treasury mint CLEARN by 1:1 ratio and give back equivalent CLEARN
-     ///@param _token the token which is to be deposited
-     ///@param _amount the amount for this particular deposit
+    ///@notice Convert USDC to CLEARN 18 decimals format
+    ///@param _amount amount in 6 decimals to convert
+    function convertUSDCDecimals(uint256 _amount) internal pure returns(uint256) {
+        return _amount * 10 ** 12;
+    }
+  
+    
+    ///@notice Deposit provide users a way to invest a depositable asset  in treasury,
+    /// then treasury mint CLEARN by 1:1 ratio and give back equivalent CLEARN
+    ///@param _token the token which is to be deposited
+    ///@param _amount the amount for this particular deposit
     function deposit(IERC20Metadata _token, uint256 _amount)
         external
         nonReentrant
         depositable(_token)
         whenNotPaused
     {
+        uint256 balanceOf = IERC20(_token).balanceOf(msg.sender);
+
         require(_amount > 0, "Deposit must be more than 0");
-        uint8 decimals = IERC20Metadata(_token).decimals();
-        (uint256 tokenPrice, IAggregatorPriceFeeds tokenFeed) = getPrice(_token);
-        uint256 value;
-        if (decimals != 18) {
-            value =
-                (tokenPrice * _amount * 1e18) /
-                10**(decimals + tokenFeed.decimals());
-                console.log('value if token decimal != 18 :',value );
-        } else {
-            value = (tokenPrice * _amount) / 10**(tokenFeed.decimals());
-            console.log('value if token decimal = 18 :',value );
-        }
-        require(value >= MIN_VALUE, "less than min deposit of $100");
-        valueDeposited += value;
-        emit Deposit(msg.sender, _token, value);
-        IERC20(_token).safeTransferFrom(msg.sender, strategyHub, _amount);
-        clearn.creditTo(msg.sender, value);
+        require(_amount <= balanceOf, "Not enough USDC");
+        uint256 valueToMint = convertUSDCDecimals(_amount);
+        uint256 allowance = IERC20(_token).allowance(msg.sender, address(this));
+        require(allowance >= _amount, "Raise token allowance");
+        valueDeposited += valueToMint;
+        emit Deposit(msg.sender, _token, valueToMint);
+        IERC20(_token).transferFrom(msg.sender, strategyHub, _amount);
+        clearn.creditTo(msg.sender, valueToMint);
     }
 
 }
