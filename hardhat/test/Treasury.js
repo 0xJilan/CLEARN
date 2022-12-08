@@ -193,7 +193,6 @@ describe("Deploy Treasury constructor", async () => {
     it("Should revert if user dont have enough CLEARN", async () => {
       const { clearn, treasury, user, mockUSDC, CLEARN_200 } =
         await loadFixture(withdrawTreasuryFixture);
-      console.log("CLEARN BALANCE : ", await clearn.balanceOf(user.address));
       await expect(
         treasury.connect(user).withdraw(mockUSDC.address, CLEARN_200)
       ).to.be.revertedWith("Not enough CLEARN");

@@ -119,8 +119,9 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         require(allowance >= _amount, "Raise token allowance");
         valueDeposited += valueToMint;
         emit Deposit(msg.sender, _token, valueToMint);
-        IERC20(_token).transferFrom(msg.sender, strategyHub, _amount);
-        clearn.creditTo(msg.sender, valueToMint);
+        bool success = IERC20(_token).transferFrom(msg.sender, strategyHub, _amount);
+        success ? clearn.creditTo(msg.sender, valueToMint) : revert( "Transfert failed!");
+        
     }
 
     ///@notice Withdraw provide users a way to get back his initial invest from treasury,
@@ -131,7 +132,7 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         external
         nonReentrant
         whenNotPaused
-        returns (bool)
+        
     {
         require(_amount > 0, "Deposit must be more than 0");
         uint256 balanceOf = clearn.balanceOf(msg.sender);
@@ -142,8 +143,8 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         require(allowance >= valueToWithdraw, "Raise token allowance");
         valueDeposited -= _amount;
         emit Withdraw(msg.sender, _token, valueToWithdraw);
-        IERC20(_token).transferFrom(strategyHub,msg.sender, valueToWithdraw);
-        clearn.debitFrom(msg.sender, _amount);
+        bool success =  IERC20(_token).transferFrom(strategyHub,msg.sender, valueToWithdraw);
+        success ? clearn.debitFrom(msg.sender, _amount) :  revert( "Transfert failed!");
     }
 
 
