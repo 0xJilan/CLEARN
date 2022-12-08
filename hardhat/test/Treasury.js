@@ -36,6 +36,34 @@ describe("Deploy Treasury constructor", async () => {
     };
   };
 
+  const withdrawTreasuryFixture = async () => {
+    const [owner, strategyHub, user, fakePriceFeed] = await ethers.getSigners();
+    const DOLLAR_100_IN_USDC = 100000000;
+    const CLEARN_200 = 200000000000000000000n;
+    const CLEARN_100 = 100000000000000000000n;
+    const MockUSDC = await ethers.getContractFactory("MockUSDC");
+    const mockUSDC = await MockUSDC.deploy("USDC", "USDC");
+    await mockUSDC.connect(owner).mint(user.address, DOLLAR_100_IN_USDC);
+    const Clearn = await ethers.getContractFactory("Clearn");
+    const clearn = await Clearn.deploy();
+    const Treasury = await ethers.getContractFactory("Treasury");
+    const treasury = await Treasury.deploy(clearn.address, strategyHub.address);
+    await clearn.setMinter(treasury.address);
+    await treasury.addTokenInfo(mockUSDC.address, fakePriceFeed.address);
+    await mockUSDC.connect(user).approve(treasury.address, DOLLAR_100_IN_USDC);
+    await treasury.connect(user).deposit(mockUSDC.address, DOLLAR_100_IN_USDC);
+    return {
+      clearn,
+      user,
+      treasury,
+      strategyHub,
+      mockUSDC,
+      DOLLAR_100_IN_USDC,
+      CLEARN_100,
+      CLEARN_200,
+    };
+  };
+
   describe("Check Minter of Clearn", () => {
     it("Should treasury is Minter of CLEARN ", async () => {
       const { clearn, treasury } = await loadFixture(deployTreasuryFixture);
@@ -149,6 +177,69 @@ describe("Deploy Treasury constructor", async () => {
       expect(await mockUSDC.balanceOf(strategyHub.address)).to.equal(
         DOLLAR_10_IN_USDC
       );
+    });
+  });
+
+  describe("Withdraw", () => {
+    it("Should revert if user amount withdraw is 0", async () => {
+      const { user, treasury, mockUSDC } = await loadFixture(
+        withdrawTreasuryFixture
+      );
+      await expect(
+        treasury.connect(user).withdraw(mockUSDC.address, 0)
+      ).to.be.revertedWith("Deposit must be more than 0");
+    });
+
+    it("Should revert if user dont have enough CLEARN", async () => {
+      const { clearn, treasury, user, mockUSDC, CLEARN_200 } =
+        await loadFixture(withdrawTreasuryFixture);
+      console.log("CLEARN BALANCE : ", await clearn.balanceOf(user.address));
+      await expect(
+        treasury.connect(user).withdraw(mockUSDC.address, CLEARN_200)
+      ).to.be.revertedWith("Not enough CLEARN");
+    });
+
+    it("Should revert if not enough allowance", async () => {
+      const { treasury, user, mockUSDC, CLEARN_100 } = await loadFixture(
+        withdrawTreasuryFixture
+      );
+      await expect(
+        treasury.connect(user).withdraw(mockUSDC.address, CLEARN_100)
+      ).to.be.revertedWith("Raise token allowance");
+    });
+    it("Should debit strategyHub if withdraw ok", async () => {
+      const {
+        strategyHub,
+        treasury,
+        user,
+        mockUSDC,
+        CLEARN_100,
+        DOLLAR_100_IN_USDC,
+      } = await loadFixture(withdrawTreasuryFixture);
+      await mockUSDC
+        .connect(strategyHub)
+        .approve(treasury.address, DOLLAR_100_IN_USDC);
+      await treasury.connect(user).withdraw(mockUSDC.address, CLEARN_100);
+      expect(await mockUSDC.balanceOf(strategyHub.address)).to.equal(0);
+    });
+
+    it("Should remove CLEARN Balance to User when withdraw success", async () => {
+      const {
+        strategyHub,
+        clearn,
+        user,
+        treasury,
+        mockUSDC,
+        CLEARN_100,
+        DOLLAR_100_IN_USDC,
+      } = await loadFixture(withdrawTreasuryFixture);
+      await mockUSDC
+        .connect(strategyHub)
+        .approve(treasury.address, DOLLAR_100_IN_USDC);
+
+      await treasury.connect(user).withdraw(mockUSDC.address, CLEARN_100);
+
+      expect(await clearn.balanceOf(user.address)).to.be.equals(0);
     });
   });
 });

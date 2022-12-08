@@ -4,7 +4,6 @@ import "hardhat/console.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IClearn} from "../interfaces/IClearn.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IAggregatorPriceFeeds} from "../interfaces/IAggregatorPriceFeeds.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -27,7 +26,12 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
     uint256 public valueDeposited;
 
     event Deposit(
-        address indexed _depositor,
+        address indexed _user,
+        IERC20 indexed _token,
+        uint256 _value
+    );
+    event Withdraw(
+        address indexed _user,
         IERC20 indexed _token,
         uint256 _value
     );
@@ -54,7 +58,8 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
     }
 
 
-    //TODO: COMMENT GET PRICE
+    ///@notice return asset price and feed from Oracle.
+    ///@param _token Token address of token data needed
     function getPrice(
         IERC20 _token
     ) public view returns (uint256, IAggregatorPriceFeeds) {
@@ -88,6 +93,12 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
     function convertUSDCDecimals(uint256 _amount) internal pure returns(uint256) {
         return _amount * 10 ** 12;
     }
+
+    ///@notice Convert CLEARN to USDC 6 decimals format
+    ///@param _amount amount in 18 decimals to convert
+    function convertCLEARNDecimals(uint256 _amount) internal pure returns(uint256) {
+        return _amount / 10 ** 12;
+    }
   
     
     ///@notice Deposit provide users a way to invest a depositable asset  in treasury,
@@ -101,7 +112,6 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         whenNotPaused
     {
         uint256 balanceOf = IERC20(_token).balanceOf(msg.sender);
-
         require(_amount > 0, "Deposit must be more than 0");
         require(_amount <= balanceOf, "Not enough USDC");
         uint256 valueToMint = convertUSDCDecimals(_amount);
@@ -112,6 +122,30 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         IERC20(_token).transferFrom(msg.sender, strategyHub, _amount);
         clearn.creditTo(msg.sender, valueToMint);
     }
+
+    ///@notice Withdraw provide users a way to get back his initial invest from treasury,
+    /// for this treasury burn user CLEARN's by 1:1 ratio and give back equivalent USDC
+    ///@param _token the token withdrawable (USDC)
+    ///@param _amount the amount for this particular withdraw
+    function withdraw(IERC20Metadata _token, uint256 _amount)
+        external
+        nonReentrant
+        whenNotPaused
+        returns (bool)
+    {
+        require(_amount > 0, "Deposit must be more than 0");
+        uint256 balanceOf = clearn.balanceOf(msg.sender);
+        require(_amount <= balanceOf, "Not enough CLEARN");
+        uint256 valueToWithdraw = convertCLEARNDecimals(_amount);
+
+        uint256 allowance = IERC20(_token).allowance(strategyHub, address(this));
+        require(allowance >= valueToWithdraw, "Raise token allowance");
+        valueDeposited -= _amount;
+        emit Withdraw(msg.sender, _token, valueToWithdraw);
+        IERC20(_token).transferFrom(strategyHub,msg.sender, valueToWithdraw);
+        clearn.debitFrom(msg.sender, _amount);
+    }
+
 
 }
 
