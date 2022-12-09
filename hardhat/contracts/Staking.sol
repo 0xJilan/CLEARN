@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-
+import "hardhat/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -52,7 +52,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
 
     ///@notice set contract Address who will be able to deposit rewards
     ///@param _yieldDistributor address who controls yield rewards
-    function setYield(address _yieldDistributor) external onlyOwner {
+    function setYieldDistributor(address _yieldDistributor) external onlyOwner {
         yieldDistributor = _yieldDistributor;
         emit YieldDistributorSet(msg.sender, _yieldDistributor);
     }
@@ -72,9 +72,14 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
     function issuanceRate(
         uint256 _rewards
     ) public nonReentrant updateReward(address(0)) {
-        require(msg.sender != yieldDistributor, "Only Yield Distributor");
+        require(
+            yieldDistributor != address(0),
+            "Owner need to Set YieldDistributor"
+        );
+        require(msg.sender == yieldDistributor, "Only Yield Distributor");
         require(_rewards > 0, "Zero rewards");
-        require(_totalSupply != 0, "xCLEARN have 0 supply");
+        require(_totalSupply != 0, "Nobody Stake Actually");
+
         if (block.timestamp >= periodFinish) {
             rewardRate = _rewards / rewardsDuration;
         } else {
@@ -82,7 +87,8 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
             uint256 remainingRewards = remainingSeconds * rewardRate;
             rewardRate = (_rewards + remainingRewards) / rewardsDuration;
         }
-        //TODO:Check Allowances before transfer
+        uint256 allowance = rewardsToken.allowance(msg.sender, address(this));
+        require(allowance >= _rewards, "Raise token allowance");
         IERC20(rewardsToken).transferFrom(msg.sender, address(this), _rewards);
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp + rewardsDuration;

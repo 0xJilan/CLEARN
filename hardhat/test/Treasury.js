@@ -10,8 +10,8 @@ const { BN, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
 describe("Deploy Treasury constructor", async () => {
   const deployTreasuryFixture = async () => {
     const [owner, strategyHub, user, fakePriceFeed] = await ethers.getSigners();
-    const DOLLAR_10_IN_USDC = 10000000;
-    const DOLLAR_50_IN_USDC = 50000000;
+    const DOLLAR_10_IN_USDC = String(10 * 10 ** 6);
+    const DOLLAR_50_IN_USDC = String(50 * 10 ** 6);
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
     const mockUSDC = await MockUSDC.deploy("USDC", "USDC");
     await mockUSDC.connect(owner).mint(user.address, DOLLAR_10_IN_USDC);
@@ -38,9 +38,9 @@ describe("Deploy Treasury constructor", async () => {
 
   const withdrawTreasuryFixture = async () => {
     const [owner, strategyHub, user, fakePriceFeed] = await ethers.getSigners();
-    const DOLLAR_100_IN_USDC = 100000000;
-    const CLEARN_200 = 200000000000000000000n;
-    const CLEARN_100 = 100000000000000000000n;
+    const DOLLAR_100_IN_USDC = String(100 * 10 ** 6);
+    const CLEARN_200 = String(200 * 10 ** 18);
+    const CLEARN_100 = String(100 * 10 ** 18);
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
     const mockUSDC = await MockUSDC.deploy("USDC", "USDC");
     await mockUSDC.connect(owner).mint(user.address, DOLLAR_100_IN_USDC);

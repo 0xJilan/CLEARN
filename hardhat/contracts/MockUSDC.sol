@@ -13,7 +13,6 @@ contract MockUSDC is ERC20, Ownable {
         string memory _symbol
     ) ERC20(_name, _symbol) {
         decimals_ = 6;
-        _mint(msg.sender, 100000000000);
     }
 
     function decimals() public view override(ERC20) returns (uint8) {
