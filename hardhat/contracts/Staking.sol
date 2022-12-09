@@ -130,8 +130,15 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
         require(allowance >= _amount, "Raise token allowance");
         _totalSupply += _amount;
         _balances[msg.sender] += _amount;
-        stakingToken.transferFrom(msg.sender, address(this), _amount);
         emit Staked(msg.sender, _amount);
+        bool success = stakingToken.transferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+        if (!success) {
+            revert("Transfert failed!");
+        }
     }
 
     ///@notice Withdraw provide users a way to unstake his CLEARN token,
