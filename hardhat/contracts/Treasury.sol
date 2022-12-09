@@ -8,7 +8,6 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {IAggregatorPriceFeeds} from "../interfaces/IAggregatorPriceFeeds.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
@@ -19,17 +18,11 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
  *  - Allow users to withdraw CLEARN to ERC20
  */
 contract Treasury is Ownable, ReentrancyGuard, Pausable {
-
     IClearn public immutable clearn;
-    ///@notice address who manage treasury funds
-    address public strategyHub;
-    uint256 public valueDeposited;
+    address public strategyHub; ///@notice address who manage treasury funds
+    uint256 public valueDeposited; ///@notice Actual value deposited in treasury
 
-    event Deposit(
-        address indexed _user,
-        IERC20 indexed _token,
-        uint256 _value
-    );
+    event Deposit(address indexed _user, IERC20 indexed _token, uint256 _value);
     event Withdraw(
         address indexed _user,
         IERC20 indexed _token,
@@ -56,7 +49,6 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         require(depositableTokens[_token] == true, "Token not depositable");
         _;
     }
-
 
     ///@notice return asset price and feed from Oracle.
     ///@param _token Token address of token data needed
@@ -90,27 +82,28 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
 
     ///@notice Convert USDC to CLEARN 18 decimals format
     ///@param _amount amount in 6 decimals to convert
-    function convertUSDCDecimals(uint256 _amount) internal pure returns(uint256) {
+    function convertUSDCDecimals(
+        uint256 _amount
+    ) internal pure returns (uint256) {
         return _amount * 10 ** 12;
     }
 
     ///@notice Convert CLEARN to USDC 6 decimals format
     ///@param _amount amount in 18 decimals to convert
-    function convertCLEARNDecimals(uint256 _amount) internal pure returns(uint256) {
+    function convertCLEARNDecimals(
+        uint256 _amount
+    ) internal pure returns (uint256) {
         return _amount / 10 ** 12;
     }
-  
-    
+
     ///@notice Deposit provide users a way to invest a depositable asset  in treasury,
     /// then treasury mint CLEARN by 1:1 ratio and give back equivalent CLEARN
     ///@param _token the token which is to be deposited
     ///@param _amount the amount for this particular deposit
-    function deposit(IERC20Metadata _token, uint256 _amount)
-        external
-        nonReentrant
-        depositable(_token)
-        whenNotPaused
-    {
+    function deposit(
+        IERC20Metadata _token,
+        uint256 _amount
+    ) external nonReentrant depositable(_token) whenNotPaused {
         uint256 balanceOf = IERC20(_token).balanceOf(msg.sender);
         require(_amount > 0, "Deposit must be more than 0");
         require(_amount <= balanceOf, "Not enough USDC");
@@ -119,34 +112,43 @@ contract Treasury is Ownable, ReentrancyGuard, Pausable {
         require(allowance >= _amount, "Raise token allowance");
         valueDeposited += valueToMint;
         emit Deposit(msg.sender, _token, valueToMint);
-        bool success = IERC20(_token).transferFrom(msg.sender, strategyHub, _amount);
-        success ? clearn.creditTo(msg.sender, valueToMint) : revert( "Transfert failed!");
-        
+        bool success = IERC20(_token).transferFrom(
+            msg.sender,
+            strategyHub,
+            _amount
+        );
+        success
+            ? clearn.creditTo(msg.sender, valueToMint)
+            : revert("Transfert failed!");
     }
 
     ///@notice Withdraw provide users a way to get back his initial invest from treasury,
     /// for this treasury burn user CLEARN's by 1:1 ratio and give back equivalent USDC
     ///@param _token the token withdrawable (USDC)
     ///@param _amount the amount for this particular withdraw
-    function withdraw(IERC20Metadata _token, uint256 _amount)
-        external
-        nonReentrant
-        whenNotPaused
-        
-    {
+    function withdraw(
+        IERC20Metadata _token,
+        uint256 _amount
+    ) external nonReentrant whenNotPaused {
         require(_amount > 0, "Deposit must be more than 0");
         uint256 balanceOf = clearn.balanceOf(msg.sender);
         require(_amount <= balanceOf, "Not enough CLEARN");
         uint256 valueToWithdraw = convertCLEARNDecimals(_amount);
 
-        uint256 allowance = IERC20(_token).allowance(strategyHub, address(this));
+        uint256 allowance = IERC20(_token).allowance(
+            strategyHub,
+            address(this)
+        );
         require(allowance >= valueToWithdraw, "Raise token allowance");
         valueDeposited -= _amount;
         emit Withdraw(msg.sender, _token, valueToWithdraw);
-        bool success =  IERC20(_token).transferFrom(strategyHub,msg.sender, valueToWithdraw);
-        success ? clearn.debitFrom(msg.sender, _amount) :  revert( "Transfert failed!");
+        bool success = IERC20(_token).transferFrom(
+            strategyHub,
+            msg.sender,
+            valueToWithdraw
+        );
+        success
+            ? clearn.debitFrom(msg.sender, _amount)
+            : revert("Transfert failed!");
     }
-
-
 }
-

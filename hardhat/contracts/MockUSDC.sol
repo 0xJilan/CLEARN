@@ -6,7 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Mock USDC Token
 /// @notice ERC20 implementation which serves as ERC20 USDC for running test locally
 contract MockUSDC is ERC20, Ownable {
-       uint8 private decimals_;
+    uint8 private decimals_;
 
     constructor(
         string memory _name,
@@ -31,6 +31,4 @@ contract MockUSDC is ERC20, Ownable {
     function burn(address _user, uint256 _amount) public {
         _burn(_user, _amount);
     }
-
-
 }
