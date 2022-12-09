@@ -85,7 +85,7 @@ describe("Deploy with 3 users with CLEARN", () => {
     it("Should revert if user amount staking is 0", async () => {
       const { userOne, staking } = await loadFixture(deployStakingFixture);
       await expect(staking.connect(userOne).stake(0)).to.be.revertedWith(
-        "Stake  must be more than 0"
+        "Stake must be more than 0"
       );
     });
     it("Should revert if user dont have enough CLEARN", async () => {
@@ -131,8 +131,69 @@ describe("Deploy with 3 users with CLEARN", () => {
       const clearnBalanceUserOneAfterDeposit = await clearn.balanceOf(
         userOne.address
       );
-
       expect(await clearnBalanceUserOneAfterDeposit).to.be.equals(0);
+    });
+  });
+
+  describe("Withdraw Clearn", () => {
+    it("Should revert if user amount unstake is 0", async () => {
+      const { userOne, staking } = await loadFixture(deployStakingFixture);
+      await expect(staking.connect(userOne).withdraw(0)).to.be.revertedWith(
+        "Withdraw must be more than 0"
+      );
+    });
+    it("Should revert if user dont have enough CLEARN", async () => {
+      const { userOne, staking, CLEARN_10K } = await loadFixture(
+        deployStakingFixture
+      );
+      await expect(
+        staking.connect(userOne).withdraw(CLEARN_10K)
+      ).to.be.revertedWith("Not enough xCLEARN");
+    });
+
+    it("Should decrease totalSupply xCLEARN if success", async () => {
+      const { userOne, staking, CLEARN_10K } = await loadFixture(
+        deployStakingFixture
+      );
+      await staking.connect(userOne).stake(CLEARN_10K);
+      const totalSupplyBeforeWithdraw = await staking.totalSupply();
+      await staking.connect(userOne).withdraw(CLEARN_10K);
+      const totalSupplyAfterWithdraw = await staking.totalSupply();
+      expect(totalSupplyBeforeWithdraw).to.be.above(totalSupplyAfterWithdraw);
+    });
+
+    it("Should debit xClean balance of user if success", async () => {
+      const { userOne, staking, CLEARN_10K } = await loadFixture(
+        deployStakingFixture
+      );
+      await staking.connect(userOne).stake(CLEARN_10K);
+      const xClearnBalanceBeforeWithdraw = await staking.balanceOf(
+        userOne.address
+      );
+      await staking.connect(userOne).withdraw(CLEARN_10K);
+      const xClearnBalanceAfterWithdraw = await staking.balanceOf(
+        userOne.address
+      );
+      expect(xClearnBalanceBeforeWithdraw).to.be.above(
+        xClearnBalanceAfterWithdraw
+      );
+    });
+
+    it("Should add CLEARN to user balance if success", async () => {
+      const { clearn, userOne, staking, CLEARN_10K } = await loadFixture(
+        deployStakingFixture
+      );
+      await staking.connect(userOne).stake(CLEARN_10K);
+      const clearnBalanceBeforeWithdraw = await clearn.balanceOf(
+        userOne.address
+      );
+      await staking.connect(userOne).withdraw(CLEARN_10K);
+      const clearnBalanceAfterWithdraw = await clearn.balanceOf(
+        userOne.address
+      );
+      expect(clearnBalanceAfterWithdraw).to.be.above(
+        clearnBalanceBeforeWithdraw
+      );
     });
   });
 });

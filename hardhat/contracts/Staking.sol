@@ -82,6 +82,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
             uint256 remainingRewards = remainingSeconds * rewardRate;
             rewardRate = (_rewards + remainingRewards) / rewardsDuration;
         }
+        //TODO:Check Allowances before transfer
         IERC20(rewardsToken).transferFrom(msg.sender, address(this), _rewards);
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp + rewardsDuration;
@@ -124,7 +125,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
         uint256 _amount
     ) public nonReentrant whenNotPaused updateReward(msg.sender) {
         uint256 clearnBalance = stakingToken.balanceOf(msg.sender);
-        require(_amount > 0, "Stake  must be more than 0");
+        require(_amount > 0, "Stake must be more than 0");
         require(_amount <= clearnBalance, "Not enough CLEARN");
         uint256 allowance = stakingToken.allowance(msg.sender, address(this));
         require(allowance >= _amount, "Raise token allowance");
