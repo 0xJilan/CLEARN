@@ -2,11 +2,22 @@
 
 CLEARN allows users to invest funds in DEFI without having to deal with its complexity and while redistributing a portion of its returns to the association of his choice that contribute to environnement
 
-## CONTRACTS ON GOERLI
+## Clearn ENTITES
 
-Clearn ERC20: <a href='https://goerli.etherscan.io/address/0xeB13E623606B617d49bA8070DbC941628fBbf2dC'>0xeB13E623606B617d49bA8070DbC941628fBbf2dC</a>
-Treasury : <a href='https://goerli.etherscan.io/address/0x5e2155262e03A02f06a4Ed4606a4c39E7e905e7A'>0x5e2155262e03A02f06a4Ed4606a4c39E7e905e7A</a>
-Staking : <a href='https://goerli.etherscan.io/address/0x68068CDe5a5922d76C911cf32B5642Ea99339506'>0x68068CDe5a5922d76C911cf32B5642Ea99339506</a>
+To improve your understanding of the project, here are the entities described
+![CLEARN ENTITES ](./client/public/entites.png)
+
+## Clearn ERC20 Contract on GOERLI
+
+<a href='https://goerli.etherscan.io/address/0xeB13E623606B617d49bA8070DbC941628fBbf2dC'>0xeB13E623606B617d49bA8070DbC941628fBbf2dC</a>
+
+## Treasury Contract on GOERLI
+
+<a href='https://goerli.etherscan.io/address/0x5e2155262e03A02f06a4Ed4606a4c39E7e905e7A'>0x5e2155262e03A02f06a4Ed4606a4c39E7e905e7A</a>
+
+## Staking Contract on GOERLI
+
+<a href='https://goerli.etherscan.io/address/0x68068CDe5a5922d76C911cf32B5642Ea99339506'>0x68068CDe5a5922d76C911cf32B5642Ea99339506</a>
 
 ## DEMO WEBSITE
 
