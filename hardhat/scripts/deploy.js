@@ -1,30 +1,27 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const strategyHub = "0x719059ccd499908c0411768E4C78Bcc5e95a4Aac";
+  const USDCGoerli = "0x07865c6e87b9f70255377e024ace6630c1eaa37f";
+  const USDCChainlinkFeed = "0xAb5c49580294Aff77670F839ea425f5b78ab3Ae7";
+  const Clearn = await hre.ethers.getContractFactory("Clearn");
+  const clearn = await Clearn.deploy();
+  await clearn.deployed();
+  const Treasury = await hre.ethers.getContractFactory("Treasury");
+  const treasury = await Treasury.deploy(clearn.address, strategyHub);
+  await treasury.deployed();
+  await clearn.setMinter(treasury.address);
+  await treasury.addTokenInfo(USDCGoerli, USDCChainlinkFeed);
+  const Staking = await hre.ethers.getContractFactory("Staking");
+  const staking = await Staking.deploy(clearn.address, USDCGoerli);
+  await staking.deployed();
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
-
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-  await lock.deployed();
-
-  console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  console.log("Deployment done !");
+  console.log(`Clearn address: ${clearn.address}`);
+  console.log(`Treasury address: ${treasury.address}`);
+  console.log(`Staking address: ${staking.address}`);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
